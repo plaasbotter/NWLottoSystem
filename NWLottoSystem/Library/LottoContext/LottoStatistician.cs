@@ -12,6 +12,7 @@ namespace NWLottoSystem.Library.LottoContext
         private readonly DatabaseContext _dbContext;
         private readonly PowerBallStats powerBallStats;
         private readonly LottoStats lottoStats;
+        private readonly DailyLottoStats dailyLottoStats;
         private DateTime _lastUpdateTime;
 
         public LottoStatistician(DatabaseContext dbContext, ILogger logger)
@@ -20,6 +21,7 @@ namespace NWLottoSystem.Library.LottoContext
             _logger = logger;
             powerBallStats = new PowerBallStats();
             lottoStats = new LottoStats();
+            dailyLottoStats = new DailyLottoStats();
             _lastUpdateTime = DateTime.Today.AddDays(-1);
         }
 
@@ -31,6 +33,7 @@ namespace NWLottoSystem.Library.LottoContext
                 {
                     UpdatePowerBall();
                     UpdateLotto();
+                    UpdateDailyLotto();
                     using (FileStream fs = new FileStream($"{_lastUpdateTime.ToString("yyyy-MM-dd")}_pb_stats.json", FileMode.Create))
                     {
                         fs.Write(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(powerBallStats)));
@@ -38,6 +41,10 @@ namespace NWLottoSystem.Library.LottoContext
                     using (FileStream fs = new FileStream($"{_lastUpdateTime.ToString("yyyy-MM-dd")}_lt_stats.json", FileMode.Create))
                     {
                         fs.Write(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(lottoStats)));
+                    }
+                    using (FileStream fs = new FileStream($"{_lastUpdateTime.ToString("yyyy-MM-dd")}_dl_stats.json", FileMode.Create))
+                    {
+                        fs.Write(Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(dailyLottoStats)));
                     }
                     _lastUpdateTime = DateTime.Today;
                 }
@@ -58,26 +65,28 @@ namespace NWLottoSystem.Library.LottoContext
             _dbContext.UpdateSums(lottoStats.sums, 6, true, lottoStats.lottoTypeWhere);
             _dbContext.GetLastResult(lottoStats.lastResult, 6, true, lottoStats.lottoTypeWhere, lottoStats.games.Count);
             UpdateFrequencyAverages(lottoStats);
-            UpdateLottoScores();
         }
 
-        private void UpdateFrequencyAverages(LottoStats lottoStats)
+        private void UpdateFrequencyAverages(StatsBaseClass lottoStats, LottoGames lottoGame = LottoGames.unknown)
         {
             foreach (var ball in lottoStats.ballFrequency)
             {
                 lottoStats.ballFrequencyAverage += ball;
             }
             lottoStats.ballFrequencyAverage /= (double)lottoStats.ballFrequency.Length;
-        }
-
-        private void UpdateLottoScores()
-        {
-
+            if (lottoGame == LottoGames.powerball)
+            {
+                foreach (var ball in powerBallStats.powerballFrequency)
+                {
+                    powerBallStats.powerballFrequencyAverage += ball;
+                }
+                powerBallStats.powerballFrequencyAverage /= (double)powerBallStats.powerballFrequency.Length;
+            }
         }
 
         private void UpdatePowerBall()
         {
-            _logger.Information("[{0}]", "LottoStatictician.UpdateLotto");
+            _logger.Information("[{0}]", "LottoStatictician.UpdatePowerball");
             _dbContext.UpdateCount(ref powerBallStats.count, powerBallStats.lottoTypeWhere);
             _dbContext.UpdateOdds(powerBallStats.odds, 5, false, powerBallStats.lottoTypeWhere);
             _dbContext.UpdateHighs(powerBallStats.highs, powerBallStats.highValue, 5, false, powerBallStats.lottoTypeWhere);
@@ -85,27 +94,19 @@ namespace NWLottoSystem.Library.LottoContext
             _dbContext.UpdateSums(powerBallStats.sums, 5, false, powerBallStats.lottoTypeWhere);
             _dbContext.UpdatePowerBallFrequency(powerBallStats.powerballFrequency, powerBallStats.lottoTypeWhere);
             _dbContext.GetLastResult(powerBallStats.lastResult, 5, true, powerBallStats.lottoTypeWhere, powerBallStats.games.Count);
-            UpdateFrequencyAverages(powerBallStats);
-            UpdatePowerballScores();
+            UpdateFrequencyAverages(powerBallStats, LottoGames.powerball);
         }
 
-        private void UpdateFrequencyAverages(PowerBallStats powerBallStats)
+        private void UpdateDailyLotto()
         {
-            foreach (var ball in powerBallStats.ballFrequency)
-            {
-                powerBallStats.ballFrequencyAverage += ball;
-            }
-            powerBallStats.ballFrequencyAverage /= (double)powerBallStats.ballFrequency.Length;
-            foreach (var ball in powerBallStats.powerballFrequency)
-            {
-                powerBallStats.powerballFrequencyAverage += ball;
-            }
-            powerBallStats.powerballFrequencyAverage /= (double)powerBallStats.powerballFrequency.Length;
-        }
-
-        private void UpdatePowerballScores()
-        {
-
+            _logger.Information("[{0}]", "LottoStatictician.UpdateDailyLotto");
+            _dbContext.UpdateCount(ref dailyLottoStats.count, dailyLottoStats.lottoTypeWhere);
+            _dbContext.UpdateOdds(dailyLottoStats.odds, 5, false, dailyLottoStats.lottoTypeWhere);
+            _dbContext.UpdateHighs(dailyLottoStats.highs, dailyLottoStats.highValue, 5, false, dailyLottoStats.lottoTypeWhere);
+            _dbContext.UpdateBallFrequency(dailyLottoStats.ballFrequency, 5, false, dailyLottoStats.lottoTypeWhere);
+            _dbContext.UpdateSums(dailyLottoStats.sums, 5, false, dailyLottoStats.lottoTypeWhere);
+            _dbContext.GetLastResult(dailyLottoStats.lastResult, 5, false, dailyLottoStats.lottoTypeWhere, dailyLottoStats.games.Count);
+            UpdateFrequencyAverages(dailyLottoStats);
         }
 
         internal string GetLastPowerballResult()
@@ -125,39 +126,44 @@ namespace NWLottoSystem.Library.LottoContext
             return sb.ToString();
         }
 
+        internal string GetLastDailyResult()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine($"Daily {string.Join(' ', dailyLottoStats.lastResult[LottoGames.daily_lotto])}");
+            return sb.ToString();
+        }
+
         public double TestHighProbability(int[] balls, int powerball, LottoGames game)
         {
             double returnValue = 0;
             switch (game)
             {
                 case LottoGames.powerball:
-                    returnValue = CalculatePowerballProbability(balls);
-                    returnValue = CalculateHighPowerballProbability(balls, powerball, returnValue);
+                    returnValue = CalculateGeneralProbability(balls, powerBallStats);
+                    returnValue = CalculateHighGeneralProbability(balls, powerball, returnValue, game, powerBallStats);
                     break;
                 case LottoGames.lotto:
-                    returnValue = CalculateLottoProbability(balls);
-                    returnValue = CalculateHighLottoProbability(balls, returnValue);
+                    returnValue = CalculateGeneralProbability(balls, lottoStats);
+                    returnValue = CalculateHighGeneralProbability(balls, 0, returnValue, game, lottoStats);
+                    break;
+                case LottoGames.daily_lotto:
+                    returnValue = CalculateGeneralProbability(balls, dailyLottoStats);
+                    returnValue = CalculateHighGeneralProbability(balls, 0, returnValue, game, dailyLottoStats);
                     break;
             }
             return returnValue;
         }
 
-        private double CalculateHighLottoProbability(int[] balls, double returnValue)
+        private double CalculateHighGeneralProbability(int[] balls, int powerball, double returnValue, LottoGames game, StatsBaseClass baseStats)
         {
-            foreach (var ball in balls)
+            for (int i = 0; i < balls.Length; i++)
             {
-                returnValue *= (double)lottoStats.ballFrequency[ball - 1] / (double)lottoStats.count;
+                returnValue *= (double)baseStats.ballFrequency[balls[i] - 1] / (double)baseStats.count;
             }
-            return returnValue;
-        }
-
-        private double CalculateHighPowerballProbability(int[] balls, int powerball, double returnValue)
-        {
-            for (int i = 0; i < 5; i++)
+            if (game == LottoGames.powerball)
             {
-                returnValue *= (double)powerBallStats.ballFrequency[balls[i] - 1] / (double)powerBallStats.count;
+                returnValue *= (double)baseStats.powerballFrequency[powerball - 1] / (double)baseStats.count;
             }
-            returnValue *= (double)powerBallStats.powerballFrequency[powerball - 1] / (double)powerBallStats.count;
             return returnValue;
         }
 
@@ -167,42 +173,22 @@ namespace NWLottoSystem.Library.LottoContext
             switch (game)
             {
                 case LottoGames.powerball:
-                    returnValue = CalculatePowerballProbability(balls);
-                    returnValue = CalculateLowPowerballProbability(balls, powerball, returnValue);
+                    returnValue = CalculateGeneralProbability(balls, powerBallStats);
+                    returnValue = CalculateLowGeneralProbability(balls, powerball, returnValue, game, powerBallStats);
                     break;
                 case LottoGames.lotto:
-                    returnValue = CalculateLottoProbability(balls);
-                    returnValue = CalculateLowLottoProbability(balls, returnValue);
+                    returnValue = CalculateGeneralProbability(balls, lottoStats);
+                    returnValue = CalculateLowGeneralProbability(balls, 0, returnValue, game, lottoStats);
+                    break;
+                case LottoGames.daily_lotto:
+                    returnValue = CalculateGeneralProbability(balls, dailyLottoStats);
+                    returnValue = CalculateLowGeneralProbability(balls, 0, returnValue, game, dailyLottoStats);
                     break;
             }
             return returnValue;
         }
 
-        private double CalculateLowLottoProbability(int[] balls, double returnValue)
-        {
-            double statVal = 0;
-            foreach (var ball in balls)
-            {
-                statVal = 1.0 - ((double)lottoStats.ballFrequency[ball - 1] / (double)lottoStats.count);
-                returnValue *= statVal;
-            }
-            return returnValue;
-        }
-
-        private double CalculateLowPowerballProbability(int[] balls, int powerball, double returnValue)
-        {
-            double statVal = 0;
-            for (int i = 0; i < 5; i++)
-            {
-                statVal = 1.0 - ((double)powerBallStats.ballFrequency[balls[i] - 1] / (double)powerBallStats.count);
-                returnValue *= statVal;
-            }
-            statVal = 1.0 - ((double)powerBallStats.powerballFrequency[powerball - 1] / (double)powerBallStats.count);
-            returnValue *= statVal;
-            return returnValue;
-        }
-
-        private double CalculateLottoProbability(int[] balls)
+        private double CalculateGeneralProbability(int[] balls, StatsBaseClass baseStats)
         {
             double statVal = 0;
             double returnValue = 1000000;
@@ -211,34 +197,32 @@ namespace NWLottoSystem.Library.LottoContext
             int sum = 0;
             foreach (var ball in balls)
             {
-                highs += (int)(ball / lottoStats.highValue);
+                highs += (int)(ball / baseStats.highValue);
                 odds += ball % 2;
                 sum += ball;
             }
-            statVal = (double)lottoStats.sums[sum - 1] / (double)lottoStats.count;
+            statVal = (double)baseStats.sums[sum - 1] / (double)baseStats.count;
             returnValue *= statVal;
-            statVal *= (double)lottoStats.highs[highs] / (double)lottoStats.count;
+            statVal *= (double)baseStats.highs[highs] / (double)baseStats.count;
             returnValue *= statVal;
-            statVal *= (double)lottoStats.odds[odds] / (double)lottoStats.count;
+            statVal *= (double)baseStats.odds[odds] / (double)baseStats.count;
             returnValue *= statVal;
             return returnValue;
         }
 
-        private double CalculatePowerballProbability(int[] balls)
+        private double CalculateLowGeneralProbability(int[] balls, int powerball, double returnValue, LottoGames game, StatsBaseClass baseStats)
         {
-            double returnValue = 1000000;
-            int highs = 0;
-            int odds = 0;
-            int sum = 0;
-            for (int i = 0; i < 5; i++)
+            double statVal = 0;
+            for (int i = 0; i < balls.Length; i++)
             {
-                highs += (int)(balls[i] / powerBallStats.highValue);
-                odds += balls[i] % 2;
-                sum += balls[i];
+                statVal = 1.0 - ((double)baseStats.ballFrequency[balls[i] - 1] / (double)baseStats.count);
+                returnValue *= statVal;
             }
-            returnValue *= (double)powerBallStats.sums[sum - 1] / (double)powerBallStats.count;
-            returnValue *= (double)powerBallStats.highs[highs] / (double)powerBallStats.count;
-            returnValue *= (double)powerBallStats.odds[odds] / (double)powerBallStats.count;
+            if (game == LottoGames.powerball)
+            {
+                statVal = 1.0 - ((double)baseStats.powerballFrequency[powerball - 1] / (double)baseStats.count);
+                returnValue *= statVal;
+            }
             return returnValue;
         }
 
@@ -248,35 +232,31 @@ namespace NWLottoSystem.Library.LottoContext
             switch (game)
             {
                 case LottoGames.powerball:
-                    returnValue = CalculatePowerballProbability(balls);
-                    returnValue = CalculateDistancePowerballProbability(balls, powerball, returnValue);
+                    returnValue = CalculateGeneralProbability(balls, powerBallStats);
+                    returnValue = CalculateDistanceGeneralProbability(balls, powerball, returnValue, game, powerBallStats);
                     break;
                 case LottoGames.lotto:
-                    returnValue = CalculateLottoProbability(balls);
-                    returnValue = CalculateDistanceLottoProbability(balls, returnValue);
+                    returnValue = CalculateGeneralProbability(balls, lottoStats);
+                    returnValue = CalculateDistanceGeneralProbability(balls, 0, returnValue, game, lottoStats);
+                    break;
+                case LottoGames.daily_lotto:
+                    returnValue = CalculateGeneralProbability(balls, dailyLottoStats);
+                    returnValue = CalculateDistanceGeneralProbability(balls, 0, returnValue, game, dailyLottoStats);
                     break;
             }
             return returnValue;
         }
 
-        private double CalculateDistanceLottoProbability(int[] balls, double returnValue)
-        {
-            foreach (var ball in balls)
-            {
-                returnValue *= Math.Abs((double)lottoStats.ballFrequency[ball - 1] - lottoStats.ballFrequencyAverage) / lottoStats.ballFrequencyAverage;
-            }
-            return returnValue;
-        }
-
-        private double CalculateDistancePowerballProbability(int[] balls, int powerball, double returnValue)
+        private double CalculateDistanceGeneralProbability(int[] balls, int powerball, double returnValue, LottoGames game, StatsBaseClass baseStats)
         {
             for (int i = 0; i < 5; i++)
             {
-                //returnValue *= (double)powerBallStats.ballFrequency[balls[i] - 1] / (double)powerBallStats.count;
-                returnValue *= Math.Abs((double)powerBallStats.ballFrequency[balls[i] - 1] - powerBallStats.ballFrequencyAverage) / powerBallStats.ballFrequencyAverage;
+                returnValue *= Math.Abs((double)baseStats.ballFrequency[balls[i] - 1] - baseStats.ballFrequencyAverage) / baseStats.ballFrequencyAverage;
             }
-            //returnValue *= (double)powerBallStats.powerballFrequency[powerball - 1] / (double)powerBallStats.count;
-            returnValue *= Math.Abs((double)powerBallStats.powerballFrequency[powerball - 1] - powerBallStats.powerballFrequencyAverage) / powerBallStats.powerballFrequencyAverage;
+            if (game == LottoGames.powerball)
+            {
+                returnValue *= Math.Abs((double)baseStats.powerballFrequency[powerball - 1] - baseStats.powerballFrequencyAverage) / baseStats.powerballFrequencyAverage;
+            }
             return returnValue;
         }
     }

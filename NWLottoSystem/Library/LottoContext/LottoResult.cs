@@ -71,6 +71,9 @@ namespace NWLottoSystem.Library.LottoContext
                 case LottoGames.lotto_plus_2:
                     maxNodes = 6;
                     break;
+                case LottoGames.daily_lotto:
+                    maxNodes = 5;
+                    break;
                 default:
                     break;
             }
@@ -107,6 +110,9 @@ namespace NWLottoSystem.Library.LottoContext
                 case LottoGames.lotto_plus_2:
                     LoadAndInsertBallsLottoFromCurrentorain(lottoGame, rawInput);
                     break;
+                case LottoGames.daily_lotto:
+                    LoadAndInsertBallsLottoFromCurrentorain(lottoGame, rawInput);
+                    break;
                 default:
                     return;
             }
@@ -127,16 +133,22 @@ namespace NWLottoSystem.Library.LottoContext
                     Balls[2] = short.Parse(datum.ball3);
                     Balls[3] = short.Parse(datum.ball4);
                     Balls[4] = short.Parse(datum.ball5);
-                    Balls[5] = short.Parse(datum.ball6);
-                    ExtraBall = short.Parse(datum.bonusBall);
-                    for (int i = 0; i < 6; i++)
+                    if (datum.ball6 != null)
+                    {
+                        Balls[5] = short.Parse(datum.ball6);
+                    }
+                    if (datum.bonusBall != null)
+                    {
+                        ExtraBall = short.Parse(datum.bonusBall);
+                    }
+                    for (int i = 0; i < 5; i++)
                     {
                         if (Balls[i] == 0)
                         {
                             goOn = false;
                         }
                     }
-                    if (ExtraBall == 0)
+                    if (datum.bonusBall != null && ExtraBall == 0)
                     {
                         goOn = false;
                     }
@@ -152,6 +164,8 @@ namespace NWLottoSystem.Library.LottoContext
                 }
             }
         }
+
+
 
         private void LoadAndInsertBallsPowerballFromCurrentorain(LottoGames lottoGame, string rawInput)
         {
@@ -219,6 +233,9 @@ namespace NWLottoSystem.Library.LottoContext
                     case LottoGames.lotto_plus_2:
                         gamename = "LOTTOPLUS2";
                         break;
+                    case LottoGames.daily_lotto:
+                        gamename = "DAILYLOTTO";
+                        break;
                     default:
                         return;
                 }
@@ -266,6 +283,9 @@ namespace NWLottoSystem.Library.LottoContext
                     break;
                 case LottoGames.lotto_plus_2:
                     returnValue += @"lotto-plus/";
+                    break;
+                case LottoGames.daily_lotto:
+                    returnValue += @"daily-lotto/";
                     break;
                 default:
                     break;

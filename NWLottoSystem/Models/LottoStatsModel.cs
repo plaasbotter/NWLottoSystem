@@ -2,21 +2,23 @@
 
 namespace NWLottoSystem.Models
 {
-    public class PowerBallStats
+    public class StatsBaseClass
     {
         public List<LottoGames> games;
         public long count = 0;
         public int[] odds { get; set; }
         public int[] highs { get; set; }
-        public int[] powerballFrequency { get; set; }
         public int[] ballFrequency { get; set; }
         public int[] sums { get; set; }
-        public int highValue = 26;
+        public int highValue { get; set; }
         public string lottoTypeWhere = "";
-
-        public double ballFrequencyAverage { get; set; }
+        public int[] powerballFrequency { get; set; }
         public double powerballFrequencyAverage { get; set; }
+        public double ballFrequencyAverage { get; set; }
         public Dictionary<LottoGames, List<short>> lastResult { get; set; }
+    }
+    public class PowerBallStats : StatsBaseClass
+    {
         public PowerBallStats()
         {
             odds = new int[6];
@@ -24,6 +26,7 @@ namespace NWLottoSystem.Models
             powerballFrequency = new int[20];
             ballFrequency = new int[50];
             sums = new int[240];
+            highValue = 26;
             games = new List<LottoGames> { LottoGames.powerball, LottoGames.powerball_plus };
             lastResult = new Dictionary<LottoGames, List<short>>();
             foreach(var game in games)
@@ -34,19 +37,27 @@ namespace NWLottoSystem.Models
         }
     }
 
-    public class LottoStats
-    {
-        public List<LottoGames> games;
-        public long count = 0;
-        public int[] odds { get; set; }
-        public int[] highs { get; set; }
-        public int[] ballFrequency { get; set; }
-        public int[] sums { get; set; } //343
-        public double ballFrequencyAverage { get; set; }
+    public class DailyLottoStats : StatsBaseClass
+    { 
+        public DailyLottoStats()
+        {
+            odds = new int[6];
+            highs = new int[6];
+            ballFrequency = new int[36];
+            sums = new int[170];
+            games = new List<LottoGames> { LottoGames.daily_lotto };
+            lastResult = new Dictionary<LottoGames, List<short>>();
+            highValue = 19;
+            foreach (var game in games)
+            {
+                lastResult.Add(game, new List<short>());
+            }
+            lottoTypeWhere = SharedStatsFunctions.GetLottoTypeWhereString(games);
+        }
+    }
 
-        public int highValue = 27;
-        public string lottoTypeWhere = "";
-        public Dictionary<LottoGames, List<short>> lastResult { get; set; }
+    public class LottoStats : StatsBaseClass
+    {
         public LottoStats()
         {
             odds = new int[8];
@@ -55,6 +66,7 @@ namespace NWLottoSystem.Models
             sums = new int[343];
             games = new List<LottoGames> { LottoGames.lotto, LottoGames.lotto_plus_1, LottoGames.lotto_plus_2 };
             lastResult = new Dictionary<LottoGames, List<short>>();
+            highValue = 27;
             foreach (var game in games)
             {
                 lastResult.Add(game, new List<short>());

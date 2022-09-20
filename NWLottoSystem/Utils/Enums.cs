@@ -9,6 +9,7 @@
             lotto,
             lotto_plus_1,
             lotto_plus_2,
+            daily_lotto,
             unknown
         }
     }

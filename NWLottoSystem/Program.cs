@@ -28,6 +28,9 @@ namespace NWLottoSystem
         private static void Run()
         {
             DateTime lastEntryTime = _dbContext.GetLastResultDate();
+            // CHANGE THIS SECTION TO ENABLE HISTORIAN
+            //lastEntryTime = DateTime.Parse("2019-03-09");
+            //
             DateTime past = DateTime.Now;
             DateTime future = DateTime.MinValue;
             LottoStatistician lottoStatistician = new LottoStatistician(_dbContext, _logger);
@@ -43,7 +46,7 @@ namespace NWLottoSystem
                     lottoCurrentorian.Run();
                     lottoStatistician.Run();
                     telegramAPI.CheckEntries();
-                    future = DateTime.Today.AddDays(1).AddHours(12);
+                    future = DateTime.Today.AddDays(1).AddHours(9);
                 }
                 telegramAPI.ScanForMessages();
                 telegramAPI.ActionResponses();

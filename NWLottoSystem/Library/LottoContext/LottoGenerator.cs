@@ -33,7 +33,7 @@ namespace NWLottoSystem.Library.LottoContext
                     returnValue.Add(Lotto);
                 }
             }
-            while (returnValue.Count > 3)
+            while (returnValue.Count > 5)
             {
                 returnValue.RemoveAt(0);
             }
@@ -64,7 +64,7 @@ namespace NWLottoSystem.Library.LottoContext
                     returnValue.Add(Lotto);
                 }
             }
-            while (returnValue.Count > 3)
+            while (returnValue.Count > 5)
             {
                 returnValue.RemoveAt(0);
             }
@@ -85,17 +85,20 @@ namespace NWLottoSystem.Library.LottoContext
             List<int> powerball = new List<int>();
             for (int i = 0; i < maxItterations; i++)
             {
-                List<int> tempPowerBall = GeneratePowerball();
-                double tempScore = _staticitican.TestHighProbability(tempPowerBall.ToArray(), tempPowerBall[5], Utils.Enums.LottoGames.powerball);
+                List<int> tempBalls = GeneratePowerball();
+                int tempPowerBall = tempBalls[5];
+                tempBalls.RemoveAt(5);
+                double tempScore = _staticitican.TestHighProbability(tempBalls.ToArray(), tempPowerBall, Utils.Enums.LottoGames.powerball);
                 if (tempScore >= bestScore)
                 {
                     _logger.Debug("[{0}] Found better [{1}] [{2}]", "LottoGenerator.GetBestHighPowerball", tempScore, tempPowerBall);
                     bestScore = tempScore;
-                    powerball = tempPowerBall;
+                    tempBalls.Add(tempPowerBall);
+                    powerball = tempBalls;
                     returnValue.Add(powerball);
                 }
             }
-            while (returnValue.Count > 3)
+            while (returnValue.Count > 5)
             {
                 returnValue.RemoveAt(0);
             }
@@ -116,17 +119,20 @@ namespace NWLottoSystem.Library.LottoContext
             List<int> powerball = new List<int>();
             for (int i = 0; i < maxItterations; i++)
             {
-                List<int> tempPowerBall = GeneratePowerball();
-                double tempScore = _staticitican.TestLowProbability(tempPowerBall.ToArray(), tempPowerBall[5], Utils.Enums.LottoGames.powerball);
+                List<int> tempBalls = GeneratePowerball();
+                int tempPowerBall = tempBalls[5];
+                tempBalls.RemoveAt(5);
+                double tempScore = _staticitican.TestLowProbability(tempBalls.ToArray(), tempPowerBall, Utils.Enums.LottoGames.powerball);
                 if (tempScore >= bestScore)
                 {
                     _logger.Debug("[{0}] Found better [{1}] [{2}]", "LottoGenerator.GetBestLowPowerball", tempScore, tempPowerBall);
                     bestScore = tempScore;
-                    powerball = tempPowerBall;
+                    tempBalls.Add(tempPowerBall);
+                    powerball = tempBalls;
                     returnValue.Add(powerball);
                 }
             }
-            while (returnValue.Count > 3)
+            while (returnValue.Count > 5)
             {
                 returnValue.RemoveAt(0);
             }
@@ -147,6 +153,21 @@ namespace NWLottoSystem.Library.LottoContext
             while (returnValue.Count < 6)
             {
                 newVal = rando.Next(1, 53);
+                if (returnValue.Contains(newVal) == false)
+                {
+                    returnValue.Add(newVal);
+                }
+            }
+            return returnValue;
+        }
+
+        private List<int> GenerateDaily()
+        {
+            List<int> returnValue = new List<int>();
+            int newVal = 0;
+            while (returnValue.Count < 5)
+            {
+                newVal = rando.Next(1, 36);
                 if (returnValue.Contains(newVal) == false)
                 {
                     returnValue.Add(newVal);
@@ -188,7 +209,7 @@ namespace NWLottoSystem.Library.LottoContext
                     returnValue.Add(Lotto);
                 }
             }
-            while (returnValue.Count > 3)
+            while (returnValue.Count > 5)
             {
                 returnValue.RemoveAt(0);
             }
@@ -209,23 +230,119 @@ namespace NWLottoSystem.Library.LottoContext
             List<int> powerball = new List<int>();
             for (int i = 0; i < maxItterations; i++)
             {
-                List<int> tempPowerBall = GeneratePowerball();
-                double tempScore = _staticitican.TestDistanceProbability(tempPowerBall.ToArray(), tempPowerBall[5], Utils.Enums.LottoGames.powerball);
+                List<int> tempBalls = GeneratePowerball();
+                int tempPowerBall = tempBalls[5];
+                tempBalls.RemoveAt(5);
+                double tempScore = _staticitican.TestDistanceProbability(tempBalls.ToArray(), tempPowerBall, Utils.Enums.LottoGames.powerball);
                 if (tempScore >= bestScore)
                 {
                     _logger.Debug("[{0}] Found better [{1}] [{2}]", "LottoGenerator.GetBestDistancePowerball", tempScore, tempPowerBall);
                     bestScore = tempScore;
-                    powerball = tempPowerBall;
+                    tempBalls.Add(tempPowerBall);
+                    powerball = tempBalls;
                     returnValue.Add(powerball);
                 }
             }
-            while (returnValue.Count > 3)
+            while (returnValue.Count > 5)
             {
                 returnValue.RemoveAt(0);
             }
             returnValue.Reverse();
             StringBuilder sb = new StringBuilder();
             sb.AppendLine("Best Distance Powerball:");
+            for (int i = 0; i < returnValue.Count; i++)
+            {
+                sb.AppendLine($"{i + 1}=>{string.Join(" ", returnValue[i])}");
+            }
+            return sb.ToString();
+        }
+
+        internal string GetBestLowDaily(int maxItterations)
+        {
+            List<List<int>> returnValue = new List<List<int>>();
+            double bestScore = double.MinValue;
+            List<int> Lotto = new List<int>();
+            for (int i = 0; i < maxItterations; i++)
+            {
+                List<int> tempLotto = GenerateDaily();
+                double tempScore = _staticitican.TestLowProbability(tempLotto.ToArray(), 0, Utils.Enums.LottoGames.daily_lotto);
+                if (tempScore >= bestScore)
+                {
+                    _logger.Debug("[{0}] Found better [{1}] [{2}]", "DailyGenerator.GetBestLowLotto", tempScore, tempLotto);
+                    bestScore = tempScore;
+                    Lotto = tempLotto;
+                    returnValue.Add(Lotto);
+                }
+            }
+            while (returnValue.Count > 5)
+            {
+                returnValue.RemoveAt(0);
+            }
+            returnValue.Reverse();
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("Best Low Daily:");
+            for (int i = 0; i < returnValue.Count; i++)
+            {
+                sb.AppendLine($"{i + 1}=>{string.Join(" ", returnValue[i])}");
+            }
+            return sb.ToString();
+        }
+
+        internal string GetBestHighDaily(int maxItterations)
+        {
+            List<List<int>> returnValue = new List<List<int>>();
+            double bestScore = double.MinValue;
+            List<int> Lotto = new List<int>();
+            for (int i = 0; i < maxItterations; i++)
+            {
+                List<int> tempLotto = GenerateDaily();
+                double tempScore = _staticitican.TestHighProbability(tempLotto.ToArray(), 0, Utils.Enums.LottoGames.daily_lotto);
+                if (tempScore >= bestScore)
+                {
+                    _logger.Debug("[{0}] Found better [{1}] [{2}]", "DailyGenerator.GetBestHighLotto", tempScore, tempLotto);
+                    bestScore = tempScore;
+                    Lotto = tempLotto;
+                    returnValue.Add(Lotto);
+                }
+            }
+            while (returnValue.Count > 5)
+            {
+                returnValue.RemoveAt(0);
+            }
+            returnValue.Reverse();
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("Best High Daily:");
+            for (int i = 0; i < returnValue.Count; i++)
+            {
+                sb.AppendLine($"{i + 1}=>{string.Join(" ", returnValue[i])}");
+            }
+            return sb.ToString();
+        }
+
+        internal string GetBestDistanceDaily(int maxItterations)
+        {
+            List<List<int>> returnValue = new List<List<int>>();
+            double bestScore = double.MinValue;
+            List<int> Lotto = new List<int>();
+            for (int i = 0; i < maxItterations; i++)
+            {
+                List<int> tempLotto = GenerateDaily();
+                double tempScore = _staticitican.TestDistanceProbability(tempLotto.ToArray(), 0, Utils.Enums.LottoGames.daily_lotto);
+                if (tempScore >= bestScore)
+                {
+                    _logger.Debug("[{0}] Found better [{1}] [{2}]", "DailyGenerator.GetBestDistanceLotto", tempScore, tempLotto);
+                    bestScore = tempScore;
+                    Lotto = tempLotto;
+                    returnValue.Add(Lotto);
+                }
+            }
+            while (returnValue.Count > 5)
+            {
+                returnValue.RemoveAt(0);
+            }
+            returnValue.Reverse();
+            StringBuilder sb = new StringBuilder();
+            sb.AppendLine("Best Distance Daily:");
             for (int i = 0; i < returnValue.Count; i++)
             {
                 sb.AppendLine($"{i + 1}=>{string.Join(" ", returnValue[i])}");

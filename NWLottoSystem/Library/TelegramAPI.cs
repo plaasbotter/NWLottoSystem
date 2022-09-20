@@ -73,11 +73,19 @@ namespace NWLottoSystem.Library
                                         SendMessage(result.message.from.id, _lottoGenerator.GetBestHighPowerball(1235813));
                                         SendMessage(result.message.from.id, _lottoGenerator.GetBestDistancePowerball(1235813));
                                         break;
+                                    case "/get_daily":
+                                        SendMessage(result.message.from.id, _lottoGenerator.GetBestLowDaily(1235813));
+                                        SendMessage(result.message.from.id, _lottoGenerator.GetBestHighDaily(1235813));
+                                        SendMessage(result.message.from.id, _lottoGenerator.GetBestDistanceDaily(1235813));
+                                        break;
                                     case "/get_last_lotto_result":
                                         SendMessage(result.message.from.id, _lottoStatistician.GetLastLottoResult());
                                         break;
                                     case "/get_last_powerball_result":
                                         SendMessage(result.message.from.id, _lottoStatistician.GetLastPowerballResult());
+                                        break;
+                                    case "/get_last_daily_result":
+                                        SendMessage(result.message.from.id, _lottoStatistician.GetLastDailyResult());
                                         break;
                                     default:
                                         break;
