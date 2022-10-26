@@ -1,5 +1,6 @@
 ﻿using NWLottoSystem.Library;
 using NWLottoSystem.Library.LottoContext;
+using NWLottoSystem.Models.DatabaseMigrationModels;
 using NWLottoSystem.Utils;
 using Serilog;
 
@@ -22,6 +23,9 @@ namespace NWLottoSystem
             Config.LoadConfig();
             _logger = Factory.GetLogger();
             _dbContext = Factory.GetDBContext(_logger, Config.GetConnectionString());
+            _dbContext.CheckAndCreateTables("lotto_results", new lotto_results(), false);
+            _dbContext.CheckAndCreateTables("telegram_messages", new telegram_messages(), false);
+            _dbContext.CheckAndCreateTables("lotto_entries", new lotto_entries(), false);
             _httpClient = new HttpClient();
         }
 

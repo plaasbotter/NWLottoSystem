@@ -30,6 +30,7 @@ namespace NWLottoSystem.Library.LottoContext
                     _logger.Debug("[{0}] Found better [{1}] [{2}]", "LottoGenerator.GetBestHighLotto", tempScore, tempLotto);
                     bestScore = tempScore;
                     Lotto = tempLotto;
+                    Lotto.Sort();
                     returnValue.Add(Lotto);
                 }
             }
@@ -61,6 +62,7 @@ namespace NWLottoSystem.Library.LottoContext
                     _logger.Debug("[{0}] Found better [{1}] [{2}]", "LottoGenerator.GetBestLowLotto", tempScore, tempLotto);
                     bestScore = tempScore;
                     Lotto = tempLotto;
+                    Lotto.Sort();
                     returnValue.Add(Lotto);
                 }
             }
@@ -93,6 +95,7 @@ namespace NWLottoSystem.Library.LottoContext
                 {
                     _logger.Debug("[{0}] Found better [{1}] [{2}]", "LottoGenerator.GetBestHighPowerball", tempScore, tempPowerBall);
                     bestScore = tempScore;
+                    tempBalls.Sort();
                     tempBalls.Add(tempPowerBall);
                     powerball = tempBalls;
                     returnValue.Add(powerball);
@@ -127,6 +130,7 @@ namespace NWLottoSystem.Library.LottoContext
                 {
                     _logger.Debug("[{0}] Found better [{1}] [{2}]", "LottoGenerator.GetBestLowPowerball", tempScore, tempPowerBall);
                     bestScore = tempScore;
+                    tempBalls.Sort();
                     tempBalls.Add(tempPowerBall);
                     powerball = tempBalls;
                     returnValue.Add(powerball);
@@ -206,6 +210,7 @@ namespace NWLottoSystem.Library.LottoContext
                     _logger.Debug("[{0}] Found better [{1}] [{2}]", "LottoGenerator.GetBestDistanceLotto", tempScore, tempLotto);
                     bestScore = tempScore;
                     Lotto = tempLotto;
+                    Lotto.Sort();
                     returnValue.Add(Lotto);
                 }
             }
@@ -238,6 +243,7 @@ namespace NWLottoSystem.Library.LottoContext
                 {
                     _logger.Debug("[{0}] Found better [{1}] [{2}]", "LottoGenerator.GetBestDistancePowerball", tempScore, tempPowerBall);
                     bestScore = tempScore;
+                    tempBalls.Sort();
                     tempBalls.Add(tempPowerBall);
                     powerball = tempBalls;
                     returnValue.Add(powerball);
@@ -271,6 +277,7 @@ namespace NWLottoSystem.Library.LottoContext
                     _logger.Debug("[{0}] Found better [{1}] [{2}]", "DailyGenerator.GetBestLowLotto", tempScore, tempLotto);
                     bestScore = tempScore;
                     Lotto = tempLotto;
+                    Lotto.Sort();
                     returnValue.Add(Lotto);
                 }
             }
@@ -302,6 +309,7 @@ namespace NWLottoSystem.Library.LottoContext
                     _logger.Debug("[{0}] Found better [{1}] [{2}]", "DailyGenerator.GetBestHighLotto", tempScore, tempLotto);
                     bestScore = tempScore;
                     Lotto = tempLotto;
+                    Lotto.Sort();
                     returnValue.Add(Lotto);
                 }
             }
@@ -333,6 +341,7 @@ namespace NWLottoSystem.Library.LottoContext
                     _logger.Debug("[{0}] Found better [{1}] [{2}]", "DailyGenerator.GetBestDistanceLotto", tempScore, tempLotto);
                     bestScore = tempScore;
                     Lotto = tempLotto;
+                    Lotto.Sort();
                     returnValue.Add(Lotto);
                 }
             }

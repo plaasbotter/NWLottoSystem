@@ -2,6 +2,7 @@
 using NWLottoSystem.Models;
 using NWLottoSystem.Utils;
 using Serilog;
+using System.Reflection;
 using static NWLottoSystem.Utils.Enums;
 
 namespace NWLottoSystem.Library
@@ -19,6 +20,135 @@ namespace NWLottoSystem.Library
             //_connectionString = connectionString;
             _con = new NpgsqlConnection(connectionString);
             _con.OpenAsync().Wait();
+        }
+
+        public void CheckAndCreateTables(string tableName, object tableObject, bool forceDrop)
+        {
+            lock (_connectionLock)
+            {
+                while (TestConnection() == false)
+                {
+                    _logger.Warning("[{0}] [{1}]", "DatabaseContext.CheckAndCreateTables", "Reconnecting...");
+                }
+                if (forceDrop)
+                {
+                    string deleteQuery = $"DROP TABLE \"{tableName}\"";
+                    using (var cmd = new NpgsqlCommand(deleteQuery, _con))
+                    {
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+                bool exists = false;
+                string query = $"SELECT EXISTS(SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = '{tableName}')";
+                using (var cmd = new NpgsqlCommand(query, _con))
+                {
+                    using (NpgsqlDataReader rdr = cmd.ExecuteReader())
+                    {
+                        while (rdr.Read())
+                        {
+                            exists = rdr.GetBoolean(0);
+                        }
+                    }
+                }
+                if (exists == false)
+                {
+                    CreateTableWithObject(tableName, tableObject);
+                }
+                else
+                {
+                    _logger.Information($"Table {tableName} exists", "DatabaseContext.CheckAndCreateTables");
+                }
+            }
+        }
+
+        public void CreateTableWithObject(string tableName, object input)
+        {
+            while (TestConnection() == false)
+            {
+                _logger.Warning("[{0}] [{1}]", "DatabaseContext.CreateTableWithObject", "Reconnecting...");
+            }
+            List<string> primaryKeys = new List<string>();
+            bool isIdentity = false;
+            string query = $"CREATE TABLE \"{tableName}\" (";
+            foreach (PropertyInfo prop in input.GetType().GetProperties())
+            {
+                if (prop.CustomAttributes.Count() > 0)
+                {
+                    List<CustomAttributeData>? custumAttributes = prop.CustomAttributes.ToList();
+                    foreach (CustomAttributeData custumAttribute in custumAttributes)
+                    {
+                        switch (custumAttribute.AttributeType.Name)
+                        {
+                            case "PrimaryKeyAttribute":
+                                primaryKeys.Add(prop.Name);
+                                break;
+                            case "PrimaryKeyAutoIncrementAttribute":
+                                primaryKeys.Add(prop.Name);
+                                isIdentity = true;
+                                break;
+                            default:
+                                break;
+                        }
+                    }
+                }
+                var type = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
+                if (type != null)
+                {
+                    query += $"\"{prop.Name}\"";
+                    if (type == typeof(string))
+                    {
+                        if (prop.Name == "Path")
+                        {
+                            query += $" text, ";
+                        }
+                        else
+                        {
+                            query += $" character varying(100), ";
+                        }
+                    }
+                    if (type == typeof(int))
+                    {
+                        query += $" integer, ";
+                    }
+                    if (type == typeof(short))
+                    {
+                        query += $" smallint, ";
+                    }
+                    if (type == typeof(long))
+                    {
+                        query += $" bigint, ";
+                    }
+                    if (type == typeof(DateTime))
+                    {
+                        query += $" timestamp without time zone, ";
+                    }
+                    if (type == typeof(Guid))
+                    {
+                        query += $" uuid, ";
+                    }
+                    if (type == typeof(bool))
+                    {
+                        query += $" boolean, ";
+                    }
+                    if (isIdentity == true)
+                    {
+                        query = query.Substring(0, query.Length - 2);
+                        query += " NOT NULL GENERATED ALWAYS AS IDENTITY ( INCREMENT 1 ), ";
+                        isIdentity = false;
+                    }
+                }
+            }
+            query = query.Substring(0, query.Length - 2);
+            if (primaryKeys.Count > 0)
+            {
+                query += $" PRIMARY KEY (\"{string.Join("\",\"", primaryKeys)}\")";
+            }
+            query += ");";
+            using (NpgsqlCommand cmd = new NpgsqlCommand(query, _con))
+            {
+                cmd.ExecuteNonQuery();
+            }
+            _logger.Information($"Created Table {tableName}", "DatabaseContext.CreateTableWithObject");
         }
 
         public void InsertLottoResults(short[] balls, short extraBall, DateTime inputDate, LottoGames lottoGame)
@@ -124,7 +254,7 @@ namespace NWLottoSystem.Library
                 {
                     _logger.Warning("[{0}] [{1}]", "DatabaseContext.InsertLottoResults", "Reconnecting...");
                 }
-                string query = "SELECT * FROM \"lotto_entries\" WHERE \"checked\" is FALSE";
+                string query = "SELECT * FROM \"lotto_entries\" WHERE \"Checked\" is FALSE";
                 using (NpgsqlCommand cmd = new NpgsqlCommand(query, _con))
                 {
                     using (NpgsqlDataReader rdr = cmd.ExecuteReader())
@@ -159,7 +289,7 @@ namespace NWLottoSystem.Library
                 {
                     _logger.Warning("[{0}] [{1}]", "DatabaseContext.InsertLottoResults", "Reconnecting...");
                 }
-                string query = "UPDATE \"lotto_entries\" SET \"checked\" = TRUE WHERE \"reference\" = @reference AND \"id\" = @id;";
+                string query = "UPDATE \"lotto_entries\" SET \"Checked\" = TRUE WHERE \"reference\" = @reference AND \"id\" = @id;";
                 using (NpgsqlCommand cmd = new NpgsqlCommand(query,_con))
                 {
                     cmd.Parameters.Add(new NpgsqlParameter("@reference", entry.reference));
@@ -269,7 +399,7 @@ namespace NWLottoSystem.Library
                 {
                     nums.Add($"num_{i + 1}");
                 }
-                string query = $"INSERT INTO \"lotto_entries\" (\"timestamp\", \"{string.Join("\",\"", nums)}\", \"lotto_type\", \"checked\", \"reference\", \"sender_id\") VALUES (@timestamp, @{string.Join(",@", nums)}, @lotto_type, @checked, @reference, @sender_id)";
+                string query = $"INSERT INTO \"lotto_entries\" (\"timestamp\", \"{string.Join("\",\"", nums)}\", \"lotto_type\", \"Checked\", \"reference\", \"sender_id\") VALUES (@timestamp, @{string.Join(",@", nums)}, @lotto_type, @checked, @reference, @sender_id)";
                 foreach (var numbers in entry.numbers)
                 {
                     using (NpgsqlCommand cmd = new NpgsqlCommand(query, _con))
