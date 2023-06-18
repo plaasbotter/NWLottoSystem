@@ -41,6 +41,7 @@ namespace NWLottoSystem
             LottoCurrentorian lottoCurrentorian = new LottoCurrentorian(_logger, _dbContext, lastEntryTime, _httpClient);
             LottoGenerator lottoGenerator = new LottoGenerator(_logger, lottoStatistician);
             TelegramAPI telegramAPI = new TelegramAPI(_logger, _httpClient, _dbContext, lottoGenerator, lottoStatistician);
+
             while (true)
             {
                 past = DateTime.Now;

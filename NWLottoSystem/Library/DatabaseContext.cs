@@ -141,7 +141,7 @@ namespace NWLottoSystem.Library
             query = query.Substring(0, query.Length - 2);
             if (primaryKeys.Count > 0)
             {
-                query += $" PRIMARY KEY (\"{string.Join("\",\"", primaryKeys)}\")";
+                query += $", PRIMARY KEY (\"{string.Join("\",\"", primaryKeys)}\")";
             }
             query += ");";
             using (NpgsqlCommand cmd = new NpgsqlCommand(query, _con))
@@ -269,11 +269,11 @@ namespace NWLottoSystem.Library
                                 numbers.Add(rdr.GetInt16(i + 1));
                             }
                             entry.numbers.Add(numbers);
-                            entry.games = (LottoGames)rdr.GetInt16(7);
-                            entry.isChecked = rdr.GetBoolean(8);
-                            entry.reference = rdr.GetString(9);
-                            entry.sender_id = rdr.GetInt32(10);
-                            entry.timestamp = rdr.GetDateTime(11);
+                            entry.games = (LottoGames)rdr.GetInt16(11);
+                            entry.isChecked = rdr.GetBoolean(7);
+                            entry.reference = rdr.GetString(8);
+                            entry.sender_id = rdr.GetInt32(9);
+                            entry.timestamp = rdr.GetDateTime(10);
                             entries.Add(entry);
                         }
                     }

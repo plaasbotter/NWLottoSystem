@@ -9,7 +9,7 @@ namespace NWLottoSystem.Utils
         public static ILogger GetLogger()
         {
             LoggerConfiguration configuration = new LoggerConfiguration()
-                .WriteTo.File(new JsonFormatter(renderMessage: true), "logs.json", fileSizeLimitBytes: 16777216)
+                .WriteTo.File(new JsonFormatter(renderMessage: true), "logs.json", fileSizeLimitBytes: 16777216, rollOnFileSizeLimit: true)
                 .WriteTo.Console(theme: Serilog.Sinks.SystemConsole.Themes.AnsiConsoleTheme.Code)
                 .MinimumLevel.Is(Serilog.Events.LogEventLevel.Debug);
             return configuration.CreateLogger();

@@ -154,6 +154,11 @@ namespace NWLottoSystem.Library
             return returnValue;
         }
 
+        public void TestFunction(Message message)
+        {
+            TryExamineMessage(message);
+        }
+
         private void TryExamineMessage(Message message)
         {
             try
@@ -212,10 +217,35 @@ namespace NWLottoSystem.Library
                     rg = new Regex(@"\d{2}/\d{2}/\d{4}");
                     mt = rg.Matches(message.text);
                     var mtList = mt.ToList();
+                    var dt_1 = DateTime.ParseExact(mtList[0].Value, "dd/MM/yyyy", CultureInfo.InvariantCulture);
+                    var dt_2 = DateTime.ParseExact(mtList[1].Value, "dd/MM/yyyy", CultureInfo.InvariantCulture);
+                    int counter = 0;
+                    while (dt_1 <= dt_2)
+                    {
+                        if (game == LottoGames.lotto)
+                        {
+                            if (dt_1.DayOfWeek == DayOfWeek.Wednesday || dt_1.DayOfWeek == DayOfWeek.Saturday)
+                            {
+                                lottoEntries[counter].timestamp = dt_1;
+                                counter++;
+                            }
+                        }
+                        else // POWERBALL
+                        {
+                            if (dt_1.DayOfWeek == DayOfWeek.Tuesday || dt_1.DayOfWeek == DayOfWeek.Friday)
+                            {
+                                lottoEntries[counter].timestamp = dt_1;
+                                counter++;
+                            }
+                        }
+                        dt_1 = dt_1.AddDays(1);
+                    }
+                    /*
                     for (int i = 0; i < numGames; i++)
                     {
                         lottoEntries[i].timestamp = DateTime.ParseExact(mtList[i].Value, "dd/MM/yyyy", CultureInfo.InvariantCulture);
                     }
+                    */
                     foreach (var entry in lottoEntries)
                     {
                         _dbContext.SubmitEntry(entry);
